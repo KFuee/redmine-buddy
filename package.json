@@ -11,11 +11,14 @@
   "dependencies": {
     "@inquirer/prompts": "^3.1.2",
     "@types/conf": "^3.0.0",
+    "axios": "^1.5.1",
     "chalk": "^5.3.0",
+    "cli-spinner": "^0.2.10",
     "commander": "^11.0.0",
     "conf": "^11.0.2"
   },
   "devDependencies": {
+    "@types/cli-spinner": "^0.2.1",
     "@types/node": "^20.8.2",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
