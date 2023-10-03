@@ -1,5 +1,10 @@
 import { input, password } from "@inquirer/prompts";
-import { setValue } from "../utils/config.js";
+import {
+  deleteConfiguredValues,
+  getConfiguredValues,
+  setValue,
+} from "../utils/config.js";
+import chalk from "chalk";
 
 const requestValues = async (): Promise<{
   fullName: string;
@@ -26,10 +31,24 @@ const requestValues = async (): Promise<{
   return { fullName, apiKey, redmineUrl };
 };
 
-export const configureCommand = async () => {
+export const addConfigValuesCommand = async () => {
   const { redmineUrl, fullName, apiKey } = await requestValues();
 
   setValue("redmineUrl", redmineUrl);
   setValue("fullName", fullName);
   setValue("apiKey", apiKey);
+};
+
+export const getConfiguredValuesCommand = () => {
+  try {
+    const config = getConfiguredValues();
+    console.log(chalk.green(JSON.stringify(config, null, 2)));
+  } catch (error: unknown) {
+    console.log(chalk.red((error as Error).message));
+  }
+};
+
+export const deleteConfiguredValuesCommand = () => {
+  deleteConfiguredValues();
+  console.log(chalk.green("Configuración eliminada correctamente"));
 };

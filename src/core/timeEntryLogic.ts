@@ -31,9 +31,5 @@ export const calculateTotalHours = (
   endDate: string
 ) => {
   const filteredEntries = filterEntries(entries, userId, startDate, endDate);
-  return (
-    Math.round(
-      filteredEntries.reduce((acc, entry) => acc + entry.hours, 0) * 100
-    ) / 100
-  );
+  return filteredEntries.reduce((acc, entry) => acc + entry.hours, 0);
 };
