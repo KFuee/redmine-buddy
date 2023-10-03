@@ -53,4 +53,4 @@ program
     }
   });
 
-program.parse(process.argv.length > 2 ? process.argv : ["", "", "--help"]);
+program.parse();

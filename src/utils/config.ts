@@ -24,7 +24,7 @@ export const getConfiguredValues = (): {
   const storedApiKey = getValue("apiKey");
 
   if (!storedRedmineUrl || !storedFullName || !storedApiKey) {
-    throw new Error("Ejecuta el comando configure antes de continuar");
+    throw new Error("Ejecuta el comando config antes de continuar");
   }
 
   return {

@@ -1,7 +1,8 @@
 import { TimeEntry } from "../models/timeEntry.js";
-import apiClient from "./apiClient.js";
+import getApiClient from "./apiClient.js";
 
 export const getCurrentUser = async (): Promise<any> => {
+  const apiClient = getApiClient();
   const response = await apiClient.get("/users/current.json");
 
   return response.data.user;
@@ -15,6 +16,7 @@ export const getAllEntries = async (): Promise<TimeEntry[]> => {
   let shouldContinueFetching = true;
 
   while (shouldContinueFetching) {
+    const apiClient = getApiClient();
     const response = await apiClient.get("/time_entries.json", {
       params: { offset, limit },
     });
