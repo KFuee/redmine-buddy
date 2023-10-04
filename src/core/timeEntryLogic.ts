@@ -3,25 +3,28 @@ import { getAllEntries } from "../api/redmineService.js";
 
 const filterEntries = (
   entries: TimeEntry[],
-  userId: number,
-  startDate: string,
-  endDate: string
+  startDate?: string | null,
+  endDate?: string | null,
+  userId?: number | null,
+  projectId?: number | null
 ) => {
   return entries.filter(
     (entry) =>
-      entry.user.id === userId &&
-      startDate <= entry.spent_on &&
-      entry.spent_on <= endDate
+      (!startDate || entry.spent_on >= startDate) &&
+      (!endDate || entry.spent_on <= endDate) &&
+      (!userId || entry.user.id === userId) &&
+      (!projectId || entry.project.id === projectId)
   );
 };
 
 export const getFilteredEntries = async (
-  userId: number,
-  startDate: string,
-  endDate: string
+  startDate?: string | null,
+  endDate?: string | null,
+  userId?: number | null,
+  projectId?: number | null
 ) => {
   const allEntries = await getAllEntries();
-  return filterEntries(allEntries, userId, startDate, endDate);
+  return filterEntries(allEntries, startDate, endDate, userId, projectId);
 };
 
 export const calculateTotalHours = (
@@ -30,6 +33,6 @@ export const calculateTotalHours = (
   startDate: string,
   endDate: string
 ) => {
-  const filteredEntries = filterEntries(entries, userId, startDate, endDate);
+  const filteredEntries = filterEntries(entries, startDate, endDate, userId);
   return filteredEntries.reduce((acc, entry) => acc + entry.hours, 0);
 };

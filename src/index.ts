@@ -9,6 +9,7 @@ import {
   getTimeEntriesHoursCommand,
   listTimeEntriesCommand,
 } from "./command/timeEntryCommand.js";
+import { autoModeCommand } from "./command/autoModeCommand.js";
 
 program.name("redmine-buddy").version("1.0.0");
 
@@ -52,5 +53,11 @@ program
         break;
     }
   });
+
+program
+  .command("auto-mode")
+  .alias("am")
+  .description("Imputación automática de horas")
+  .action(async () => await autoModeCommand());
 
 program.parse();

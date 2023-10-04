@@ -34,9 +34,9 @@ export const listTimeEntriesCommand = async () => {
     "Obteniendo imputaciones, por favor espere..."
   );
   const timeEntries = await getFilteredEntries(
-    currentUserId,
     startDate,
-    endDate
+    endDate,
+    currentUserId
   );
 
   stopSpinner();
@@ -49,9 +49,9 @@ export const getTimeEntriesHoursCommand = async () => {
 
   const stopSpinner = createSpinner("Calculando horas, por favor espere...");
   const allEntries = await getFilteredEntries(
-    currentUserId,
     startDate,
-    endDate
+    endDate,
+    currentUserId
   );
 
   stopSpinner();
