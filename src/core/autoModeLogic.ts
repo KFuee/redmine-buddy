@@ -1,7 +1,7 @@
 import { IssueDetail } from "../models/issue.js";
 
 const randomHours = (min: number, max: number): number => {
-  min = Math.max(min, 0.5);
+  min = Math.max(min, 0.5); // Garantizar que el mínimo sea 0.5
   const minQuarters = Math.ceil(min / 0.25);
   const maxQuarters = Math.floor(max / 0.25);
   const randomQuarters =
@@ -12,73 +12,89 @@ const randomHours = (min: number, max: number): number => {
 const imputeHoursToIssue = async (
   issueId: number,
   hours: number,
-  totalImputed: { hours: number }
+  totalImputed: { hours: number },
+  previousImputations: Map<number, number>
 ) => {
-  console.log(`Imputed ${hours} hours to Issue ID: ${issueId}`);
+  const previousHours = previousImputations.get(issueId) || 0;
+  previousImputations.set(issueId, previousHours + hours);
+
   totalImputed.hours += hours;
+};
+
+const getDistributionPercentage = (issue: IssueDetail) => {
+  const totalHours = issue.timeEntries.reduce(
+    (sum, entry) => sum + entry.hours,
+    0
+  );
+  const estimatedHours = issue.estimated_hours || 0;
+  return totalHours + estimatedHours * 0.5; // Pondera las horas estimadas al 50%.
 };
 
 export const distributeHours = (
   issuesWithDetails: IssueDetail[],
   hoursToDistribute: number
-): number => {
+): { totalImputed: number; previousImputations: Map<number, number> } => {
   let totalImputed = { hours: 0 };
+  let imputedIssues: IssueDetail[] = [];
+  const previousImputations = new Map<number, number>();
 
-  // 1. Ordenar las tareas de mayor a menor según horas imputadas.
-  issuesWithDetails.sort((a, b) => {
-    const totalHoursA = a.timeEntries.reduce(
-      (sum, entry) => sum + entry.hours,
-      0
-    );
-    const totalHoursB = b.timeEntries.reduce(
-      (sum, entry) => sum + entry.hours,
-      0
-    );
-    return totalHoursB - totalHoursA;
-  });
-
-  // 2. Calcular la holgura de cada tarea respecto a la tarea con más horas.
-  const maxHours = issuesWithDetails[0].timeEntries.reduce(
-    (sum, entry) => sum + entry.hours,
-    0
+  // Ordenar las tareas de mayor a menor según horas imputadas + horas estimadas.
+  issuesWithDetails.sort(
+    (a, b) => getDistributionPercentage(b) - getDistributionPercentage(a)
   );
-  const slack: { [id: string]: number } = {};
-  let totalSlack = 0;
-  issuesWithDetails.forEach((issue) => {
-    slack[issue.id] =
-      maxHours - issue.timeEntries.reduce((sum, entry) => sum + entry.hours, 0);
-    totalSlack += slack[issue.id];
+
+  while (hoursToDistribute >= 0.5) {
+    const index = Math.floor(Math.random() * issuesWithDetails.length);
+    const issue = issuesWithDetails[index];
+
+    let maxHoursForIssue = Math.min(2.5, hoursToDistribute);
+    let hoursToImpute = randomHours(0.5, maxHoursForIssue);
+
+    imputeHoursToIssue(
+      issue.id,
+      hoursToImpute,
+      totalImputed,
+      previousImputations
+    );
+
+    hoursToDistribute -= hoursToImpute;
+    imputedIssues.push(issue);
+  }
+
+  // Corrección: Si hay horas restantes
+  if (hoursToDistribute <= 0)
+    return { totalImputed: totalImputed.hours, previousImputations };
+
+  const suitableTasks = imputedIssues.filter((issue) => {
+    const totalHours = issue.timeEntries.reduce(
+      (sum, entry) => sum + entry.hours,
+      0
+    );
+    return (totalHours + hoursToDistribute) % 0.5 === 0;
   });
 
-  let remainingHours = hoursToDistribute;
-
-  // 3. Distribuir las horas proporcionalmente basado en la holgura.
-  for (let issue of issuesWithDetails) {
-    if (remainingHours < 0.5) break;
-
-    let proportion = slack[issue.id] / totalSlack;
-    let hoursForTask = proportion * remainingHours;
-
-    // Mientras la tarea pueda recibir al menos 0.5 horas, imputamos aleatoriamente.
-    while (hoursForTask >= 0.5) {
-      let hoursToImpute = randomHours(0.5, Math.min(hoursForTask, 8.5));
-      imputeHoursToIssue(issue.id, hoursToImpute, totalImputed);
-
-      remainingHours -= hoursToImpute;
-      hoursForTask -= hoursToImpute;
-    }
-
-    totalSlack -= slack[issue.id];
-  }
-
-  // 4. Corrección: Garantizar que se imputen exactamente las horas esperadas.
-  if (totalImputed.hours < hoursToDistribute) {
-    let diff = hoursToDistribute - totalImputed.hours;
-    const taskWithMostSlack = issuesWithDetails.reduce((a, b) =>
-      slack[a.id] > slack[b.id] ? a : b
+  if (suitableTasks.length > 0) {
+    const randomIssue =
+      suitableTasks[Math.floor(Math.random() * suitableTasks.length)];
+    imputeHoursToIssue(
+      randomIssue.id,
+      hoursToDistribute,
+      totalImputed,
+      previousImputations
     );
-    imputeHoursToIssue(taskWithMostSlack.id, diff, totalImputed);
+  } else {
+    const randomIssue =
+      imputedIssues[Math.floor(Math.random() * imputedIssues.length)];
+    imputeHoursToIssue(
+      randomIssue.id,
+      hoursToDistribute,
+      totalImputed,
+      previousImputations
+    );
   }
 
-  return totalImputed.hours;
+  return {
+    totalImputed: totalImputed.hours,
+    previousImputations,
+  };
 };

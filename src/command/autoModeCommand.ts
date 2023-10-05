@@ -1,5 +1,6 @@
 import { input, select } from "@inquirer/prompts";
 import {
+  createTimeEntry,
   getAllIssuesByProjectId,
   getAllProjects,
 } from "../api/redmineService.js";
@@ -7,6 +8,7 @@ import { getFilteredEntries } from "../core/timeEntryLogic.js";
 import { IssueDetail } from "../models/issue.js";
 import { distributeHours } from "../core/autoModeLogic.js";
 import { createSpinner } from "../utils/spinner.js";
+import chalk from "chalk";
 
 const requestValues = async (
   choices: { name: string; value: number }[]
@@ -44,7 +46,7 @@ export const autoModeCommand = async () => {
   const { date, hoursToRegister, project } = await requestValues(choices);
 
   const stopSpinner = createSpinner(
-    "Realizando la imputación automática, por favor, espere..."
+    "Realizando la repartición automática, por favor, espere..."
   );
 
   const timeEntries = await getFilteredEntries(null, null, null, project);
@@ -61,5 +63,46 @@ export const autoModeCommand = async () => {
 
   stopSpinner();
 
-  console.log(distributeHours(issuesWithDetails, Number(hoursToRegister)));
+  const { totalImputed, previousImputations } = distributeHours(
+    issuesWithDetails,
+    Number(hoursToRegister)
+  );
+
+  const combinationOfIssuesAndTotalHours = Array.from(
+    previousImputations.entries()
+  ).map(([issueId, hours]) => {
+    const issue = issues.find((issue) => issue.id === issueId);
+    return { issue, hours };
+  });
+
+  for (const { issue, hours } of combinationOfIssuesAndTotalHours) {
+    if (!issue) continue;
+
+    try {
+      await createTimeEntry(issue.id, hours, date);
+      console.log(
+        chalk.yellow(
+          `Se han imputado ${hours.toFixed(2)} horas en la tarea ${
+            issue.id
+          } - ${issue.subject}`
+        )
+      );
+    } catch (error) {
+      console.log(
+        chalk.red(
+          `No se han podido imputar ${hours.toFixed(2)} horas en la tarea ${
+            issue.id
+          } - ${issue.subject}`
+        )
+      );
+    }
+  }
+
+  console.log(
+    chalk.bgGreen.black(
+      `Se han imputado un total de ${totalImputed.toFixed(
+        2
+      )} horas en el proyecto ${choices.find((c) => c.value === project)?.name}`
+    )
+  );
 };

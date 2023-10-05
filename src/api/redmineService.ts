@@ -61,3 +61,22 @@ export const getAllIssuesByProjectId = async (
 
 export const getAllEntries = async (): Promise<TimeEntry[]> =>
   await paginateApiCall<TimeEntry>("time_entries.json", "time_entries");
+
+export const createTimeEntry = async (
+  issueId: number,
+  hours: number,
+  spentOn: string,
+  comments?: string
+): Promise<TimeEntry> => {
+  const apiClient = getApiClient();
+  const response = await apiClient.post("/time_entries.json", {
+    time_entry: {
+      issue_id: issueId,
+      hours,
+      spent_on: spentOn,
+      comments,
+    },
+  });
+
+  return response.data.time_entry;
+};
