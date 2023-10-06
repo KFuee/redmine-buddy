@@ -51,7 +51,9 @@ export const autoModeCommand = async () => {
 
   const timeEntries = await getFilteredEntries(null, null, null, project);
 
-  const issues = await getAllIssuesByProjectId(project);
+  let issues = await getAllIssuesByProjectId(project);
+  // Elimina todas las issues que su estado sea "Cerrada"
+  issues = issues.filter((issue) => issue.status.id !== 5);
   const issuesWithDetails: IssueDetail[] = issues.map((issue) => {
     return {
       ...issue,
@@ -97,6 +99,9 @@ export const autoModeCommand = async () => {
       );
     }
   }
+
+  // Espacio en blanco
+  console.log("");
 
   console.log(
     chalk.bgGreen.black(
